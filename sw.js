@@ -1,17 +1,18 @@
 const CACHE_NAME = 'zerog-cache-v1';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/css/zerog.css',
-  '/js/main.js',
-  '/js/lock.js',
-  '/js/dashboard.js',
-  '/js/predictor.js',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
+  './',
+  'index.html',
+  'css/zerog.css',
+  'js/main.js',
+  'js/lock.js',
+  'js/dashboard.js',
+  'js/predictor.js',
+  'manifest.json',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
   'https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap'
 ];
+
 
 // Instalação do Service Worker e cacheamento dos assets
 self.addEventListener('install', event => {

@@ -8,8 +8,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="ZERO-G — Sistema de controle financeiro de atrito zero. Organize suas finanças com velocidade terminal.">
   <title>ZERO-G :: SISTEMA DE CONTROLE FINANCEIRO</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/css/zerog.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/zerog.css">
 </head>
 <body>
 
@@ -251,15 +251,15 @@
 </div>
 
 <!-- Scripts — ordem importa -->
-<script src="/js/predictor.js"></script>
-<script src="/js/lock.js"></script>
-<script src="/js/dashboard.js"></script>
-<script src="/js/main.js"></script>
+<script src="js/predictor.js"></script>
+<script src="js/lock.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/main.js"></script>
 
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
+      navigator.serviceWorker.register('sw.js')
         .then(reg => console.log('[ZERO-G] Service Worker registrado com escopo:', reg.scope))
         .catch(err => console.error('[ZERO-G] Falha ao registrar Service Worker:', err));
     });
