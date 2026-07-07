@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="ZERO-G — Sistema de controle financeiro de atrito zero. Organize suas finanças com velocidade terminal.">
+  <title>ZERO-G :: SISTEMA DE CONTROLE FINANCEIRO</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/zerog.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ================================================================
+       TELA 1: BOOT SPLASH
+       ================================================================ -->
+  <div class="screen" id="screen-boot">
+    <div class="boot-center">
+      <div class="boot-logo">[ ZERO-G ]</div>
+
+      <div class="boot-bar-container">
+        <div class="boot-bar-label">CARREGANDO SISTEMAS DE BORDO</div>
+        <div class="boot-bar" id="boot-bar"></div>
+      </div>
+
+      <div class="boot-label">INICIALIZANDO...</div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       TELA 2: PATTERN LOCK
+       ================================================================ -->
+  <div class="screen" id="screen-lock">
+    <div class="lock-header">
+      <div class="lock-title">TERMINAL SEGURO</div>
+      <div class="lock-subtitle">// AUTENTICAÇÃO POR PADRÃO DE ACESSO //</div>
+    </div>
+
+    <div class="lock-wrapper" id="lock-wrapper">
+      <canvas id="lock-canvas"></canvas>
+      <div class="lock-grid">
+        <!-- Grade 3x3: índices 0-8 -->
+        <div class="lock-node"><div class="lock-dot" data-index="0"></div></div>
+        <div class="lock-node"><div class="lock-dot" data-index="1"></div></div>
+        <div class="lock-node"><div class="lock-dot" data-index="2"></div></div>
+        <div class="lock-node"><div class="lock-dot" data-index="3"></div></div>
+        <div class="lock-node"><div class="lock-dot" data-index="4"></div></div>
+        <div class="lock-node"><div class="lock-dot" data-index="5"></div></div>
+        <div class="lock-node"><div class="lock-dot" data-index="6"></div></div>
+        <div class="lock-node"><div class="lock-dot" data-index="7"></div></div>
+        <div class="lock-node"><div class="lock-dot" data-index="8"></div></div>
+      </div>
+    </div>
+
+    <div class="lock-status" id="lock-status">AGUARDANDO AUTENTICAÇÃO...</div>
+    <div class="lock-hint" id="lock-hint">[ CONECTE MÍNIMO 4 NÓS ]</div>
+  </div>
+
+  <!-- ================================================================
+       TELA 3: DASHBOARD PRINCIPAL
+       ================================================================ -->
+  <div class="screen" id="screen-dashboard">
+
+    <!-- Navegador Temporal -->
+    <div class="dash-header">
+      <button class="dash-nav-btn" id="btn-prev-month" aria-label="Mês anterior">&#9664;</button>
+      <span class="dash-month-label" id="dash-month">JULHO 2026</span>
+      <button class="dash-nav-btn" id="btn-next-month" aria-label="Próximo mês">&#9654;</button>
+      <button class="dash-config-btn" id="btn-open-config" aria-label="Configurações">&#9881;</button>
+    </div>
+
+    <!-- Saldo Líquido -->
+    <div class="dash-saldo-section">
+      <div class="dash-saldo-label">SALDO OPERACIONAL</div>
+      <div class="dash-saldo-value neutro" id="dash-saldo">R$ 0,00</div>
+    </div>
+
+    <!-- Área de scroll -->
+    <div class="dash-scroll">
+
+      <!-- Módulo HABITAT — Fixos -->
+      <div class="module-header">
+        <div class="module-tag">HABITAT</div>
+        <div class="module-line"></div>
+      </div>
+      <div id="fixos-list">
+        <div class="empty-state">CARREGANDO...</div>
+      </div>
+
+      <!-- Equalizador de Categorias -->
+      <div class="eq-section">
+        <div class="module-header">
+          <div class="module-tag">CARGA / CATEGORIA</div>
+          <div class="module-line"></div>
+        </div>
+        <div class="eq-grid" id="eq-grid"></div>
+      </div>
+
+      <!-- Gastos Variáveis -->
+      <div class="module-header" style="margin-top:12px">
+        <div class="module-tag">VARIÁVEIS</div>
+        <div class="module-line"></div>
+      </div>
+      <div id="var-list">
+        <div class="empty-state">SEM GASTOS VARIÁVEIS</div>
+      </div>
+
+      <!-- Entradas -->
+      <div class="module-header" style="margin-top:12px">
+        <div class="module-tag">ENTRADAS</div>
+        <div class="module-line"></div>
+      </div>
+      <div id="entrada-list">
+        <div class="empty-state">SEM ENTRADAS</div>
+      </div>
+
+    </div><!-- /dash-scroll -->
+
+    <!-- Botão flutuante INJECT DATA -->
+    <div id="btn-inject" role="button" aria-label="Injetar dado financeiro">
+      <button class="inject-btn">
+        <span class="inject-btn-icon">⚡</span>
+        [ INJECT DATA ]
+      </button>
+    </div>
+
+  </div><!-- /screen-dashboard -->
+
+</div><!-- /app -->
+
+<!-- ================================================================
+     PAINEL: INJECT DATA (bottom sheet)
+     ================================================================ -->
+<div id="overlay"></div>
+
+<div id="panel-inject" role="dialog" aria-label="Injetar dado financeiro" aria-modal="true">
+
+  <div class="panel-header">
+    <div class="panel-title">[ INJECT DATA ]</div>
+    <button class="panel-close" id="btn-panel-close" aria-label="Fechar painel">✕</button>
+  </div>
+
+  <!-- Tipo: Saída / Entrada -->
+  <div class="tipo-row">
+    <button class="tipo-btn" id="btn-tipo-saida">▼ SAÍDA</button>
+    <button class="tipo-btn" id="btn-tipo-entrada">▲ ENTRADA</button>
+  </div>
+
+  <!-- Valor -->
+  <div class="field-group">
+    <label class="field-label" for="inp-valor">VALOR (R$)</label>
+    <input class="field-input"
+           id="inp-valor"
+           type="number"
+           inputmode="decimal"
+           step="0.01"
+           min="0.01"
+           placeholder="0,00"
+           autocomplete="off"
+           aria-label="Valor da transação">
+  </div>
+
+  <!-- Descrição -->
+  <div class="field-group">
+    <label class="field-label" for="inp-desc">DESCRIÇÃO</label>
+    <input class="field-input field-input-desc"
+           id="inp-desc"
+           type="text"
+           placeholder="Ex: Padaria, Netflix, Uber..."
+           autocomplete="off"
+           maxlength="80"
+           aria-label="Descrição da transação">
+  </div>
+
+  <!-- Grade de Categorias (preenchida pelo JS) -->
+  <div class="field-label">CATEGORIA</div>
+  <div class="cat-grid" id="cat-grid"></div>
+
+  <!-- Toggle REPLICAR -->
+  <div class="toggle-row">
+    <span class="toggle-label">[ REPLICAR ]</span>
+    <label class="toggle-switch" aria-label="Ativar parcelamento">
+      <input type="checkbox" id="toggle-replicar">
+      <div class="toggle-track">
+        <div class="toggle-thumb"></div>
+      </div>
+    </label>
+    <span class="toggle-label" style="color: var(--amber40); font-size:9px;">PARCELAR EM MESES</span>
+  </div>
+
+  <!-- Campo de parcelas (aparece ao ativar REPLICAR) -->
+  <div class="parcelas-field" id="parcelas-field">
+    <div class="field-group">
+      <label class="field-label" for="inp-parcelas">TOTAL DE PARCELAS</label>
+      <input class="field-input"
+             id="inp-parcelas"
+             type="number"
+             inputmode="numeric"
+             min="2"
+             max="120"
+             placeholder="12"
+             autocomplete="off"
+             aria-label="Total de parcelas">
+    </div>
+  </div>
+
+  <!-- Botão Transmitir -->
+  <button class="transmit-btn" id="btn-transmitir" aria-label="Confirmar e transmitir dado">
+    [ ⚡ TRANSMITIR ]
+  </button>
+
+</div>
+
+<!-- Toast de feedback -->
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- Painel de Configuração de Fixos -->
+<div id="panel-config" aria-label="Configurar custos fixos" role="dialog">
+  <div class="config-header">
+    <div class="config-title">[ CONFIG // FIXOS ]</div>
+    <button class="panel-close" id="btn-config-close" aria-label="Fechar configurações">✕</button>
+  </div>
+  <div class="config-subtitle">VALORES PADRÃO // AFETAM MESES FUTUROS</div>
+  <div id="config-fixos-list"></div>
+  <div class="config-actions">
+    <button class="transmit-btn" id="btn-salvar-config">
+      [ ⚡ SALVAR CONFIGURAÇÃO ]
+    </button>
+    
+    <div style="display: flex; gap: 8px; margin-top: 4px;">
+      <button class="transmit-btn" id="btn-export-backup" style="flex:1; font-size:11px; padding:10px;">
+        [ 📁 EXPORTAR BACKUP ]
+      </button>
+      <button class="transmit-btn" id="btn-import-backup" style="flex:1; font-size:11px; padding:10px;">
+        [ 📂 RESTAURAR BACKUP ]
+      </button>
+    </div>
+    <input type="file" id="inp-backup-file" accept=".json" style="display:none;">
+
+    <div class="config-reset-area">
+      <div class="config-reset-label">ZONA DE PERIGO</div>
+      <button class="reset-btn" id="btn-reset-padrao">
+        [ 🔒 REDEFINIR PADRÃO DE ACESSO ]
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts — ordem importa -->
+<script src="/js/predictor.js"></script>
+<script src="/js/lock.js"></script>
+<script src="/js/dashboard.js"></script>
+<script src="/js/main.js"></script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('[ZERO-G] Service Worker registrado com escopo:', reg.scope))
+        .catch(err => console.error('[ZERO-G] Falha ao registrar Service Worker:', err));
+    });
+  }
+</script>
+
+</body>
+</html>
