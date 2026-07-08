@@ -400,10 +400,40 @@ const ConfigPanel = (() => {
     reader.readAsText(file);
   }
 
+  async function forcarAtualizacao() {
+    const confirmar = window.confirm('O sistema irá limpar o cache local e forçar o download da última versão da rede. Continuar?');
+    if (!confirmar) return;
+
+    showToast('LIMPANDO CACHE...', false);
+    
+    if ('serviceWorker' in navigator) {
+      try {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (let reg of regs) {
+          await reg.unregister();
+        }
+      } catch(e) {}
+    }
+
+    if ('caches' in window) {
+      try {
+        const keys = await caches.keys();
+        for (let key of keys) {
+          await caches.delete(key);
+        }
+      } catch(e) {}
+    }
+
+    setTimeout(() => {
+      window.location.reload(true);
+    }, 800);
+  }
+
   function build() {
     document.getElementById('btn-config-close').addEventListener('click', close);
     document.getElementById('btn-salvar-config').addEventListener('click', salvar);
     document.getElementById('btn-reset-padrao').addEventListener('click', resetarPadrao);
+    document.getElementById('btn-force-update').addEventListener('click', forcarAtualizacao);
     document.getElementById('btn-open-config').addEventListener('click', open);
     
     // Backup triggers
