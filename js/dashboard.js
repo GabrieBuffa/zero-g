@@ -28,7 +28,12 @@ const Dashboard = (() => {
 
   // Estado
   let mesAtual  = new Date();
-  let habitatCollapsed = localStorage.getItem('zerog_habitat_collapsed') === 'true';
+  let colStates = {
+    habitat: localStorage.getItem('zerog_col_habitat') === 'true',
+    eq: localStorage.getItem('zerog_col_eq') === 'true',
+    var: localStorage.getItem('zerog_col_var') === 'true',
+    entrada: localStorage.getItem('zerog_col_entrada') === 'true'
+  };
 
   // Elementos do DOM
   let elMonthLabel, elSaldo;
@@ -69,24 +74,31 @@ const Dashboard = (() => {
     document.getElementById('btn-prev-month').addEventListener('click', () => navMes(-1));
     document.getElementById('btn-next-month').addEventListener('click', () => navMes(+1));
 
-    const habHeader = document.getElementById('habitat-header');
-    if (habHeader) habHeader.addEventListener('click', toggleHabitat);
+    setupCollapse('habitat-header', 'fixos-list', 'habitat-toggle-icon', 'habitat');
+    setupCollapse('eq-header', 'eq-grid', 'eq-toggle-icon', 'eq');
+    setupCollapse('var-header', 'var-list', 'var-toggle-icon', 'var');
+    setupCollapse('entrada-header', 'entrada-list', 'entrada-toggle-icon', 'entrada');
 
     carregarMes();
-    applyHabitatCollapse();
   }
 
-  function toggleHabitat() {
-    habitatCollapsed = !habitatCollapsed;
-    localStorage.setItem('zerog_habitat_collapsed', habitatCollapsed);
-    applyHabitatCollapse();
+  function setupCollapse(headerId, listId, iconId, key) {
+    const header = document.getElementById(headerId);
+    if (header) {
+      header.addEventListener('click', () => {
+        colStates[key] = !colStates[key];
+        localStorage.setItem(`zerog_col_${key}`, colStates[key]);
+        applyCollapse(listId, iconId, key);
+      });
+      applyCollapse(listId, iconId, key);
+    }
   }
-  
-  function applyHabitatCollapse() {
-    const list = document.getElementById('fixos-list');
-    const icon = document.getElementById('habitat-toggle-icon');
+
+  function applyCollapse(listId, iconId, key) {
+    const list = document.getElementById(listId);
+    const icon = document.getElementById(iconId);
     if (list && icon) {
-      if (habitatCollapsed) {
+      if (colStates[key]) {
         list.classList.add('collapsed');
         icon.textContent = '[▲]';
       } else {
@@ -206,7 +218,8 @@ const Dashboard = (() => {
     if (entradas === 0 && saidas > 0) {
       segGreen.style.strokeDashoffset = C;
       segRed.style.strokeDashoffset = 0;
-      segRed.setAttribute('transform', 'rotate(-90 50 50)');
+      segRed.style.transformOrigin = '50% 50%';
+      segRed.style.transform = 'rotate(-90deg)';
       return;
     }
 
@@ -218,11 +231,13 @@ const Dashboard = (() => {
     const greenLen = pctSaldo * C;
 
     segRed.style.strokeDashoffset = C - redLen;
-    segRed.setAttribute('transform', 'rotate(-90 50 50)');
+    segRed.style.transformOrigin = '50% 50%';
+    segRed.style.transform = 'rotate(-90deg)';
 
     segGreen.style.strokeDashoffset = C - greenLen;
     const startAngle = (pctSaidas * 360) - 90;
-    segGreen.setAttribute('transform', `rotate(${startAngle} 50 50)`);
+    segGreen.style.transformOrigin = '50% 50%';
+    segGreen.style.transform = `rotate(${startAngle}deg)`;
   }
 
   // ---- Fixos ----
