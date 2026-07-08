@@ -320,6 +320,7 @@ const ConfigPanel = (() => {
     });
 
     Dashboard.savePresets(presets);
+    Dashboard.propagarPresets(presets);
     audioBeep(880, 80);
     showToast('CONFIGURAÇÃO SALVA ✓');
     close();

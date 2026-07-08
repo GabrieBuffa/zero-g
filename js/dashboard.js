@@ -6,6 +6,14 @@ const Dashboard = (() => {
   const CATEGORIAS = ['HABITAT','SUPRIMENTOS','LAZER','LOGISTICA','EQUIPAMENTO','RESERVA'];
   const CAT_LABELS = ['HABIT.','SUPRIM.','LAZER','LOGIST.','EQUIP.','RESERVA'];
   const EQ_BLOCKS  = 10;
+  const CAT_LIMITS = {
+    'HABITAT': 5000,
+    'SUPRIMENTOS': 1500,
+    'LAZER': 1000,
+    'LOGISTICA': 1500,
+    'EQUIPAMENTO': 2000,
+    'RESERVA': 3000
+  };
 
   // Preset Padrão de Fixos
   const FIXOS_PADRAO = [
@@ -20,6 +28,7 @@ const Dashboard = (() => {
 
   // Estado
   let mesAtual  = new Date();
+  let habitatCollapsed = localStorage.getItem('zerog_habitat_collapsed') === 'true';
 
   // Elementos do DOM
   let elMonthLabel, elSaldo;
@@ -60,7 +69,31 @@ const Dashboard = (() => {
     document.getElementById('btn-prev-month').addEventListener('click', () => navMes(-1));
     document.getElementById('btn-next-month').addEventListener('click', () => navMes(+1));
 
+    const habHeader = document.getElementById('habitat-header');
+    if (habHeader) habHeader.addEventListener('click', toggleHabitat);
+
     carregarMes();
+    applyHabitatCollapse();
+  }
+
+  function toggleHabitat() {
+    habitatCollapsed = !habitatCollapsed;
+    localStorage.setItem('zerog_habitat_collapsed', habitatCollapsed);
+    applyHabitatCollapse();
+  }
+  
+  function applyHabitatCollapse() {
+    const list = document.getElementById('fixos-list');
+    const icon = document.getElementById('habitat-toggle-icon');
+    if (list && icon) {
+      if (habitatCollapsed) {
+        list.classList.add('collapsed');
+        icon.textContent = '[▲]';
+      } else {
+        list.classList.remove('collapsed');
+        icon.textContent = '[▼]';
+      }
+    }
   }
 
   // ---- Navegação temporal ----
@@ -126,6 +159,14 @@ const Dashboard = (() => {
     const saldo_liquido  = total_entradas - total_saidas;
 
     renderSaldo(saldo_liquido);
+    
+    const elIn = document.getElementById('dash-in-val');
+    const elOut = document.getElementById('dash-out-val');
+    if (elIn) elIn.textContent = '+' + formatBRL(total_entradas);
+    if (elOut) elOut.textContent = '-' + formatBRL(total_saidas);
+    
+    updateDonutChart(total_entradas, total_saidas);
+
     renderFixos(txs.filter(t => t.is_fixo === 1));
     renderVariaveis(txs.filter(t => t.is_fixo === 0 && t.tipo === 'SAÍDA'));
     renderEntradas(txs.filter(t => t.tipo === 'ENTRADA'));
@@ -140,11 +181,48 @@ const Dashboard = (() => {
     renderEqualizador(por_categoria);
   }
 
-  // ---- Saldo ----
+  // ---- Saldo & Donut Chart ----
   function renderSaldo(valor) {
     const fmt = formatBRL(Math.abs(valor));
-    elSaldo.textContent = valor >= 0 ? `+${fmt}` : `-${fmt}`;
-    elSaldo.className = 'dash-saldo-value ' + (valor > 0 ? 'positivo' : valor < 0 ? 'negativo' : 'neutro');
+    if(elSaldo) {
+      elSaldo.textContent = valor >= 0 ? `+${fmt}` : `-${fmt}`;
+      elSaldo.className = 'donut-val ' + (valor > 0 ? 'positivo' : valor < 0 ? 'negativo' : 'neutro');
+    }
+  }
+
+  function updateDonutChart(entradas, saidas) {
+    const segGreen = document.getElementById('donut-segment-green');
+    const segRed = document.getElementById('donut-segment-red');
+    if (!segGreen || !segRed) return;
+
+    const C = 251.2;
+
+    if (entradas === 0 && saidas === 0) {
+      segGreen.style.strokeDashoffset = C;
+      segRed.style.strokeDashoffset = C;
+      return;
+    }
+
+    if (entradas === 0 && saidas > 0) {
+      segGreen.style.strokeDashoffset = C;
+      segRed.style.strokeDashoffset = 0;
+      segRed.setAttribute('transform', 'rotate(-90 50 50)');
+      return;
+    }
+
+    const total = entradas;
+    const pctSaidas = Math.min(1.0, saidas / total);
+    const pctSaldo = Math.max(0.0, 1.0 - pctSaidas);
+
+    const redLen = pctSaidas * C;
+    const greenLen = pctSaldo * C;
+
+    segRed.style.strokeDashoffset = C - redLen;
+    segRed.setAttribute('transform', 'rotate(-90 50 50)');
+
+    segGreen.style.strokeDashoffset = C - greenLen;
+    const startAngle = (pctSaidas * 360) - 90;
+    segGreen.setAttribute('transform', `rotate(${startAngle} 50 50)`);
   }
 
   // ---- Fixos ----
@@ -168,20 +246,35 @@ const Dashboard = (() => {
     const row = document.getElementById(`fixo-row-${id}`);
     if (!row) return;
 
-    if (row.querySelector('.adj-input-row')) {
-      row.querySelector('.adj-input-row').remove();
+    const nextSib = row.nextElementSibling;
+    if (nextSib && nextSib.classList.contains('adj-input-row')) {
+      nextSib.remove();
       return;
     }
+
+    document.querySelectorAll('.adj-input-row').forEach(el => el.remove());
 
     const adjRow = document.createElement('div');
     adjRow.className = 'adj-input-row';
     adjRow.innerHTML = `
       <input class="adj-input" id="adj-inp-${id}" type="number" inputmode="decimal"
              step="0.01" min="0" placeholder="0.00" autocomplete="off" onfocus="this.select()">
-      <button class="adj-confirm-btn" onclick="Dashboard.confirmarAdj('${id}')">[ OK ]</button>
+      <div style="display: flex; gap: 4px;">
+        <button class="adj-confirm-btn" onclick="Dashboard.confirmarAdj('${id}')">[ OK ]</button>
+        <button class="adj-cancel-btn" onclick="Dashboard.fecharAdj('${id}')">[ ✕ ]</button>
+      </div>
     `;
     row.insertAdjacentElement('afterend', adjRow);
     setTimeout(() => document.getElementById(`adj-inp-${id}`)?.focus(), 100);
+  }
+
+  function fecharAdj(id) {
+    const row = document.getElementById(`fixo-row-${id}`);
+    if (!row) return;
+    const nextSib = row.nextElementSibling;
+    if (nextSib && nextSib.classList.contains('adj-input-row')) {
+      nextSib.remove();
+    }
   }
 
   function confirmarAdj(id) {
@@ -198,6 +291,7 @@ const Dashboard = (() => {
     const idx = txs.findIndex(t => String(t.id) === String(id));
     if (idx >= 0) {
       txs[idx].valor = Math.round(valor * 100) / 100;
+      txs[idx].is_dirty = 1;
       saveTransactions(txs);
       inp.closest('.adj-input-row')?.remove();
       carregarMes();
@@ -213,14 +307,18 @@ const Dashboard = (() => {
       elVarList.innerHTML = '<div class="empty-state">SEM GASTOS VARIÁVEIS</div>';
       return;
     }
-    elVarList.innerHTML = vars.map(t => `
-      <div class="var-row">
-        <span class="var-desc" title="${t.descricao}">${t.descricao.toUpperCase()}</span>
-        <span class="var-cat">${t.categoria}</span>
-        <span class="var-valor">-${formatBRL(t.valor)}</span>
-        <button class="var-del" onclick="Dashboard.deletarTransacao('${t.id}')" title="Remover">✕</button>
-      </div>
-    `).join('');
+    elVarList.innerHTML = vars.map(t => {
+      const isReserva = t.categoria === 'RESERVA';
+      const valorClass = isReserva ? 'var-valor investimento' : 'var-valor';
+      return `
+        <div class="var-row">
+          <span class="var-desc" title="${t.descricao}">${t.descricao.toUpperCase()}</span>
+          <span class="var-cat" ${isReserva ? 'style="color: #00d2ff;"' : ''}>${t.categoria}</span>
+          <span class="${valorClass}">${isReserva ? '' : '-'}${formatBRL(t.valor)}</span>
+          <button class="var-del" onclick="Dashboard.deletarTransacao('${t.id}')" title="Remover">✕</button>
+        </div>
+      `;
+    }).join('');
   }
 
   // ---- Entradas ----
@@ -250,15 +348,21 @@ const Dashboard = (() => {
 
   // ---- Equalizador ----
   function renderEqualizador(porCategoria) {
-    const valores = CATEGORIAS.map(c => porCategoria[c] || 0);
-    const maxVal  = Math.max(...valores, 1);
-
     elEqGrid.innerHTML = CATEGORIAS.map((cat, i) => {
-      const val    = valores[i];
-      const nivel  = Math.round((val / maxVal) * EQ_BLOCKS);
+      const val    = porCategoria[cat] || 0;
+      const limit  = CAT_LIMITS[cat] || 1000;
+      const pct    = val / limit;
+      const nivel  = Math.min(EQ_BLOCKS, Math.round(pct * EQ_BLOCKS));
       const blocos = Array.from({ length: EQ_BLOCKS }, (_, b) => {
         const lit = b < nivel;
-        const cls = lit ? (val > maxVal * 0.8 ? 'lit-red' : 'lit') : '';
+        let cls = '';
+        if (lit) {
+          if (cat === 'RESERVA') {
+            cls = 'lit-blue';
+          } else {
+            cls = pct > 0.8 ? 'lit-red' : 'lit';
+          }
+        }
         return `<div class="eq-block ${cls}"></div>`;
       }).join('');
 
@@ -321,6 +425,25 @@ const Dashboard = (() => {
     }
   }
 
+  // ---- Propagar Presets Futuros ----
+  function propagarPresets(presets) {
+    let txs = getTransactions();
+    const currentRef = mesRef();
+    
+    txs = txs.map(t => {
+      if (t.is_fixo === 1 && t.mes_referencia >= currentRef && !t.is_dirty) {
+        const preset = presets.find(p => p.id === t.fixo_id);
+        if (preset) {
+          t.valor = preset.valor_padrao;
+        }
+      }
+      return t;
+    });
+    
+    saveTransactions(txs);
+    carregarMes();
+  }
+
   // ---- Helpers ----
   function formatBRL(valor) {
     return 'R$ ' + Number(valor).toLocaleString('pt-BR', {
@@ -337,11 +460,13 @@ const Dashboard = (() => {
   return {
     init,
     abrirAdj,
+    fecharAdj,
     confirmarAdj,
     deletarTransacao,
     criarTransacao,
     getPresets,
     savePresets,
+    propagarPresets,
     getTransactions,
     saveTransactions,
     carregarMes,

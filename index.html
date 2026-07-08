@@ -73,18 +73,44 @@
       <button class="dash-config-btn" id="btn-open-config" aria-label="Configurações">&#9881;</button>
     </div>
 
-    <!-- Saldo Líquido -->
+    <!-- Saldo Líquido em Donut Chart Sci-Fi -->
     <div class="dash-saldo-section">
-      <div class="dash-saldo-label">SALDO OPERACIONAL</div>
-      <div class="dash-saldo-value neutro" id="dash-saldo">R$ 0,00</div>
+      <div class="balance-chart-container">
+        <svg class="sci-fi-donut" viewBox="0 0 100 100">
+          <!-- Background track -->
+          <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255, 176, 0, 0.05)" stroke-width="6" />
+          
+          <!-- Green segment (Balance) -->
+          <circle id="donut-segment-green" class="donut-segment segment-green" cx="50" cy="50" r="40" fill="none" stroke-width="6"
+                  stroke-dasharray="251.2" stroke-dashoffset="251.2" />
+                  
+          <!-- Red segment (Expenses) -->
+          <circle id="donut-segment-red" class="donut-segment segment-red" cx="50" cy="50" r="40" fill="none" stroke-width="6"
+                  stroke-dasharray="251.2" stroke-dashoffset="251.2" />
+                  
+          <!-- Retro HUD markings/decorations -->
+          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255, 176, 0, 0.15)" stroke-width="0.5" stroke-dasharray="2 2" />
+          <circle cx="50" cy="50" r="35" fill="none" stroke="rgba(255, 176, 0, 0.15)" stroke-width="0.5" stroke-dasharray="4 2" />
+        </svg>
+        
+        <div class="donut-center-text">
+          <div class="donut-label">SALDO OPERACIONAL</div>
+          <div class="donut-val neutro" id="dash-saldo">R$ 0,00</div>
+          <div class="donut-sub-grid">
+            <span class="donut-sub-in" id="dash-in-val">+R$ 0,00</span>
+            <span class="donut-sub-divider">/</span>
+            <span class="donut-sub-out" id="dash-out-val">-R$ 0,00</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Área de scroll -->
     <div class="dash-scroll">
 
       <!-- Módulo HABITAT — Fixos -->
-      <div class="module-header">
-        <div class="module-tag">HABITAT</div>
+      <div class="module-header" id="habitat-header" style="cursor: pointer;">
+        <div class="module-tag">HABITAT <span id="habitat-toggle-icon" style="font-size: 10px; margin-left: 6px;">[▼]</span></div>
         <div class="module-line"></div>
       </div>
       <div id="fixos-list">
