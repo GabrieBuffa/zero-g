@@ -198,7 +198,7 @@ const Dashboard = (() => {
     const fmt = formatBRL(Math.abs(valor));
     if(elSaldo) {
       elSaldo.textContent = valor >= 0 ? `+${fmt}` : `-${fmt}`;
-      elSaldo.className = 'donut-val ' + (valor > 0 ? 'positivo' : valor < 0 ? 'negativo' : 'neutro');
+      elSaldo.className = 'dash-saldo-value ' + (valor > 0 ? 'positivo' : valor < 0 ? 'negativo' : 'neutro');
     }
   }
 
