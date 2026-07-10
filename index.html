@@ -131,6 +131,21 @@
         <div class="eq-grid" id="eq-grid"></div>
       </div>
 
+      <!-- Fatura do Cartão (Agregado de Crédito) -->
+      <div class="cartao-section" style="margin-top:12px; margin-bottom: 12px; padding: 12px; background: rgba(0, 210, 255, 0.05); border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 8px;">
+        <div class="module-header" id="cartao-header" style="cursor: pointer; margin-top: 0;">
+          <div class="module-tag" style="color: #00d2ff; text-shadow: 0 0 5px rgba(0,210,255,0.5);">FATURA CARTÃO <span id="cartao-toggle-icon" style="font-size: 10px; margin-left: 6px;">[▼]</span></div>
+          <div class="module-line" style="background: rgba(0, 210, 255, 0.2);"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; margin-bottom: 8px;">
+          <span style="color: rgba(255,255,255,0.5); font-size: 10px; letter-spacing: 1px;">TOTAL DA FATURA DESTE MÊS</span>
+          <span id="cartao-total-val" style="color: #00d2ff; font-family: 'Space Mono', monospace; font-size: 18px; font-weight: bold;">R$ 0,00</span>
+        </div>
+        <div id="cartao-list">
+          <div class="empty-state">SEM GASTOS NO CARTÃO</div>
+        </div>
+      </div>
+
       <!-- Gastos Variáveis -->
       <div class="module-header" id="var-header" style="cursor: pointer; margin-top:12px">
         <div class="module-tag">VARIÁVEIS <span id="var-toggle-icon" style="font-size: 10px; margin-left: 6px;">[▼]</span></div>
@@ -179,6 +194,18 @@
   <div class="tipo-row">
     <button class="tipo-btn" id="btn-tipo-saida">▼ SAÍDA</button>
     <button class="tipo-btn" id="btn-tipo-entrada">▲ ENTRADA</button>
+  </div>
+
+  <!-- Toggle Crédito (só para saída) -->
+  <div class="toggle-row" id="row-toggle-credito">
+    <span class="toggle-label" style="color: #00d2ff;">[ CARTÃO DE CRÉDITO ]</span>
+    <label class="toggle-switch" aria-label="Usar cartão de crédito">
+      <input type="checkbox" id="toggle-credito">
+      <div class="toggle-track">
+        <div class="toggle-thumb"></div>
+      </div>
+    </label>
+    <span class="toggle-label" style="color: rgba(0,210,255,0.6); font-size:9px;">JOGA P/ FATURA</span>
   </div>
 
   <!-- Valor -->
@@ -255,7 +282,21 @@
     <div class="config-title">[ CONFIG // FIXOS ]</div>
     <button class="panel-close" id="btn-config-close" aria-label="Fechar configurações">✕</button>
   </div>
-  <div class="config-subtitle">VALORES PADRÃO // AFETAM MESES FUTUROS</div>
+  <div class="config-subtitle">CONFIGURAÇÕES DE SISTEMA E VALORES PADRÃO</div>
+
+  <div class="config-reset-label" style="margin-top: 10px;">CONFIGURAÇÕES DO CARTÃO DE CRÉDITO</div>
+  <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+    <div class="field-group" style="flex: 1;">
+      <label class="field-label" for="inp-cartao-fechamento">DIA DO FECHAMENTO</label>
+      <input class="field-input" id="inp-cartao-fechamento" type="number" inputmode="numeric" min="1" max="31" placeholder="2">
+    </div>
+    <div class="field-group" style="flex: 1;">
+      <label class="field-label" for="inp-cartao-vencimento">DIA DO VENCIMENTO</label>
+      <input class="field-input" id="inp-cartao-vencimento" type="number" inputmode="numeric" min="1" max="31" placeholder="10">
+    </div>
+  </div>
+
+  <div class="config-reset-label">CUSTOS FIXOS (MENSAL)</div>
   <div id="config-fixos-list"></div>
   <div class="config-actions">
     <button class="transmit-btn" id="btn-salvar-config">

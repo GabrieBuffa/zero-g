@@ -124,7 +124,7 @@ const InjectPanel = (() => {
   let selectedTipo = 'SAÍDA';
   let catBtns      = [];
   let inpValor, inpDesc, inpParcelas;
-  let toggleReplicar;
+  let toggleReplicar, toggleCredito, rowToggleCredito;
 
   function build() {
     const panel = document.getElementById('panel-inject');
@@ -149,6 +149,8 @@ const InjectPanel = (() => {
     inpDesc     = document.getElementById('inp-desc');
     inpParcelas = document.getElementById('inp-parcelas');
     toggleReplicar = document.getElementById('toggle-replicar');
+    toggleCredito  = document.getElementById('toggle-credito');
+    rowToggleCredito = document.getElementById('row-toggle-credito');
 
     // Tipo ENTRADA/SAÍDA
     document.getElementById('btn-tipo-saida').addEventListener('click', () => selectTipo('SAÍDA'));
@@ -205,6 +207,11 @@ const InjectPanel = (() => {
     const entrada = document.getElementById('btn-tipo-entrada');
     saida.className   = 'tipo-btn' + (tipo === 'SAÍDA'   ? ' selected-saida'   : '');
     entrada.className = 'tipo-btn' + (tipo === 'ENTRADA' ? ' selected-entrada' : '');
+    
+    // Mostra crédito apenas se for saída
+    if (rowToggleCredito) {
+      rowToggleCredito.style.display = (tipo === 'SAÍDA') ? 'flex' : 'none';
+    }
   }
 
   function resetForm() {
@@ -215,6 +222,7 @@ const InjectPanel = (() => {
     selectedTipo      = 'SAÍDA';
     catBtns.forEach(b => b.classList.remove('selected','sugerida'));
     toggleReplicar.checked = false;
+    if(toggleCredito) toggleCredito.checked = false;
     document.getElementById('parcelas-field').classList.remove('visible');
     selectTipo('SAÍDA');
   }
@@ -248,6 +256,7 @@ const InjectPanel = (() => {
       descricao:      desc,
       categoria:      selectedCat,
       tipo:           selectedTipo,
+      is_credito:     toggleCredito ? toggleCredito.checked : false,
       total_parcelas: toggleReplicar.checked ? parc : 1,
     };
 
@@ -284,6 +293,10 @@ const ConfigPanel = (() => {
   function carregarFixos() {
     fixosData = Dashboard.getPresets();
     renderFixos(fixosData);
+
+    const configCartao = Dashboard.getConfigCartao();
+    document.getElementById('inp-cartao-fechamento').value = configCartao.fechamento;
+    document.getElementById('inp-cartao-vencimento').value = configCartao.vencimento;
   }
 
   function renderFixos(fixos) {
@@ -321,6 +334,12 @@ const ConfigPanel = (() => {
 
     Dashboard.savePresets(presets);
     Dashboard.propagarPresets(presets);
+
+    // Salvar config de cartão
+    const fechamento = parseInt(document.getElementById('inp-cartao-fechamento').value) || 2;
+    const vencimento = parseInt(document.getElementById('inp-cartao-vencimento').value) || 10;
+    Dashboard.saveConfigCartao({ fechamento, vencimento });
+
     audioBeep(880, 80);
     showToast('CONFIGURAÇÃO SALVA ✓');
     close();

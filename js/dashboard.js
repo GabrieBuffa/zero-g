@@ -31,14 +31,15 @@ const Dashboard = (() => {
   let colStates = {
     habitat: localStorage.getItem('zerog_col_habitat') === 'true',
     eq: localStorage.getItem('zerog_col_eq') === 'true',
+    cartao: localStorage.getItem('zerog_col_cartao') === 'true',
     var: localStorage.getItem('zerog_col_var') === 'true',
     entrada: localStorage.getItem('zerog_col_entrada') === 'true'
   };
 
   // Elementos do DOM
   let elMonthLabel, elSaldo;
-  let elFixosList, elVarList, elEntradaList;
-  let elEqGrid;
+  let elFixosList, elCartaoList, elVarList, elEntradaList;
+  let elEqGrid, elCartaoTotalVal;
 
   // ---- GET/SET LocalStorage ----
   function getTransactions() {
@@ -62,20 +63,35 @@ const Dashboard = (() => {
     localStorage.setItem('zerog_presets', JSON.stringify(presets));
   }
 
+  function getConfigCartao() {
+    let conf = localStorage.getItem('zerog_config_cartao');
+    if (!conf) {
+      return { fechamento: 2, vencimento: 10 };
+    }
+    return JSON.parse(conf);
+  }
+
+  function saveConfigCartao(conf) {
+    localStorage.setItem('zerog_config_cartao', JSON.stringify(conf));
+  }
+
   // ---- Inicialização ----
   function init() {
     elMonthLabel  = document.getElementById('dash-month');
     elSaldo       = document.getElementById('dash-saldo');
     elFixosList   = document.getElementById('fixos-list');
+    elCartaoList  = document.getElementById('cartao-list');
     elVarList     = document.getElementById('var-list');
     elEntradaList = document.getElementById('entrada-list');
     elEqGrid      = document.getElementById('eq-grid');
+    elCartaoTotalVal = document.getElementById('cartao-total-val');
 
     document.getElementById('btn-prev-month').addEventListener('click', () => navMes(-1));
     document.getElementById('btn-next-month').addEventListener('click', () => navMes(+1));
 
     setupCollapse('habitat-header', 'fixos-list', 'habitat-toggle-icon', 'habitat');
     setupCollapse('eq-header', 'eq-grid', 'eq-toggle-icon', 'eq');
+    setupCollapse('cartao-header', 'cartao-list', 'cartao-toggle-icon', 'cartao');
     setupCollapse('var-header', 'var-list', 'var-toggle-icon', 'var');
     setupCollapse('entrada-header', 'entrada-list', 'entrada-toggle-icon', 'entrada');
 
@@ -130,6 +146,23 @@ const Dashboard = (() => {
     return `${MESES[mesAtual.getMonth()]} ${mesAtual.getFullYear()}`;
   }
 
+  function calcularMesReferenciaCredito(dataOrigem = new Date()) {
+    const config = getConfigCartao();
+    const fechamento = config.fechamento;
+    
+    // Se o dia da compra for MAIOR ou IGUAL ao dia de fechamento (e assumindo fechamento no próprio mês corrente),
+    // a fatura irá para o mês seguinte.
+    // Detalhe: Se compra = 2 de julho (fecha 2 de julho), vence 10 de julho (mesma fatura).
+    // Se compra = 3 de julho (fecha 2), vence 10 de agosto (fatura seguinte).
+    let d = new Date(dataOrigem);
+    if (d.getDate() > fechamento) {
+      d.setMonth(d.getMonth() + 1);
+    }
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  }
+
   // ---- Carregamento de dados ----
   function carregarMes() {
     const ref = mesRef();
@@ -179,8 +212,12 @@ const Dashboard = (() => {
     
     updateDonutChart(total_entradas, total_saidas);
 
+    const varsCredito = txs.filter(t => t.tipo === 'SAÍDA' && t.is_credito === 1);
+    const varsDebito  = txs.filter(t => t.tipo === 'SAÍDA' && t.is_fixo === 0 && (!t.is_credito || t.is_credito === 0));
+
     renderFixos(txs.filter(t => t.is_fixo === 1));
-    renderVariaveis(txs.filter(t => t.is_fixo === 0 && t.tipo === 'SAÍDA'));
+    renderCartao(varsCredito);
+    renderVariaveis(varsDebito);
     renderEntradas(txs.filter(t => t.tipo === 'ENTRADA'));
 
     // Calcular equalizador por categoria
@@ -316,7 +353,30 @@ const Dashboard = (() => {
     }
   }
 
-  // ---- Variáveis ----
+  // ---- Variáveis e Cartão ----
+  function renderCartao(creditoTxs) {
+    if (elCartaoTotalVal) {
+      const total = creditoTxs.reduce((a, b) => a + b.valor, 0);
+      elCartaoTotalVal.textContent = 'R$ ' + total.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    if (!elCartaoList) return;
+    
+    if (!creditoTxs.length) {
+      elCartaoList.innerHTML = '<div class="empty-state">SEM GASTOS NO CARTÃO</div>';
+      return;
+    }
+    
+    elCartaoList.innerHTML = creditoTxs.map(t => `
+      <div class="var-row" style="background: rgba(0, 210, 255, 0.05); margin-bottom: 4px; padding: 10px;">
+        <span class="var-desc" title="${t.descricao}" style="color: #fff;">${t.descricao.toUpperCase()}</span>
+        <span class="var-cat" style="color: #00d2ff; background: rgba(0, 210, 255, 0.1); border: 1px solid rgba(0, 210, 255, 0.2);">${t.categoria}</span>
+        <span class="var-valor" style="color: #00d2ff;">-${formatBRL(t.valor)}</span>
+        <button class="var-del" style="color: rgba(0, 210, 255, 0.6);" onclick="Dashboard.deletarTransacao('${t.id}')" title="Remover">✕</button>
+      </div>
+    `).join('');
+  }
+
   function renderVariaveis(vars) {
     if (!vars.length) {
       elVarList.innerHTML = '<div class="empty-state">SEM GASTOS VARIÁVEIS</div>';
@@ -394,7 +454,12 @@ const Dashboard = (() => {
   // ---- Criar transação (manual ou parcelada) ----
   function criarTransacao(payload) {
     let txs = getTransactions();
-    const ref = mesRef();
+    let ref = mesRef();
+
+    // Se for crédito, calcula o mês em que a fatura será paga
+    if (payload.is_credito) {
+      ref = calcularMesReferenciaCredito();
+    }
 
     if (payload.total_parcelas && payload.total_parcelas >= 2) {
       // Motor de parcelamento local
@@ -416,6 +481,7 @@ const Dashboard = (() => {
           tipo: 'SAÍDA',
           mes_referencia: mesRefStr,
           is_fixo: 0,
+          is_credito: payload.is_credito ? 1 : 0,
           parcela_atual: i,
           total_parcelas: total
         });
@@ -432,11 +498,20 @@ const Dashboard = (() => {
         categoria: payload.categoria,
         tipo: payload.tipo,
         mes_referencia: ref,
-        is_fixo: 0
+        is_fixo: 0,
+        is_credito: payload.is_credito ? 1 : 0
       });
       saveTransactions(txs);
+      
+      // Se foi de crédito e a referência pulou de mês (ex: comprou hoje mas vai pra fatura do mês que vem), 
+      // talvez o usuário não veja no mês atual. O Toast ajuda a informar.
+      let msg = 'DADOS INJETADOS ✓';
+      if (payload.is_credito && ref !== mesRef()) {
+        const d = ref.split('-');
+        msg = `COMPRA ALOCADA P/ FATURA DE ${d[1]}/${d[0]}`;
+      }
       carregarMes();
-      return { ok: true, mensagem: 'DADOS INJETADOS ✓' };
+      return { ok: true, mensagem: msg };
     }
   }
 
@@ -481,6 +556,8 @@ const Dashboard = (() => {
     criarTransacao,
     getPresets,
     savePresets,
+    getConfigCartao,
+    saveConfigCartao,
     propagarPresets,
     getTransactions,
     saveTransactions,
